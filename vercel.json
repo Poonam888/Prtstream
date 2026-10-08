@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/live.mpd",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/api/speedo/(.*).m3u8",
+      "destination": "/api/speedo.js?play=$1"
+    },
+    {
+      "source": "/tp.m3u",
+      "destination": "/api/tp.js"
+    },
+    {
+      "source": "/api/license",
+      "destination": "/api/license.js"
+    },
+    {
+      "source": "/api",
+      "destination": "/api/vega.js"
+    }
+  ]
+}
