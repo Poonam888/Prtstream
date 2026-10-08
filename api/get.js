@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  let current_cookie = "hdntl=exp=1791032018~acl=%2f*~id=a9e407ec0862848f9d79c9fe197be629~data=hdntl~hmac=6f63427b53603dadfc728f7e70fe9cec540330b35eb888d60261c9c162ef1644"; // Jab bhi pre-configured rakhni ho yahan daal dena
+  let current_cookie = ""; // Jab bhi pre-configured rakhni ho yahan daal dena
 
   if (current_cookie && current_cookie.trim() !== "") {
     return res.status(200).send(`
