@@ -1,6 +1,6 @@
 export default {
   async fetch(request, env, ctx) {
-    const playlistUrl = "https://project-lc4mz.vercel.app/api/indexplay?prtstream";
+    const playlistUrl = "https://prtstream56.vercel.app/api/indexplay?prtstream";
     const fetchOptions = {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
