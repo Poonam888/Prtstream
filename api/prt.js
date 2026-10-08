@@ -109,7 +109,7 @@ export default {
           groupedChannels["✨ Lastest Hub Movies"].push(ch);
         } else if (groupLower.includes("latest movies")) {
           groupedChannels["latest movies"].push(ch);
-        } else if (groupLower.includes("18+") || groupLower.includes("adult")) {
+        } else if (groupLower.includes("18+")) {
           ch.extinf = ch.extinf.replace(/group-title="[^"]+"/, 'group-title="🔥18+"');
           ch.groupTitle = "🔥18+";
           groupedChannels["🔥18+"].push(ch);
