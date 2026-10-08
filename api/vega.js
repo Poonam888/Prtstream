@@ -1,0 +1,151 @@
+export default async function handler(req, res) {
+    const userAgent = "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36";
+const SITE = "https://bold-darkness-d959.poonamchouhan076.workers.dev/?site=https://vegamoviess.fun/";
+    async function viewSourceFetch(url) {
+        try {
+            const response = await fetch(url, {
+                headers: { "User-Agent": userAgent },
+                redirect: "follow"
+            });
+            if (!response.ok) return null;
+            return await response.text();
+        } catch (err) {
+            return null;
+        }
+    }
+
+    const movieId = req.query.id || req.query.play;
+
+    if (movieId) {
+        let movieUrl = "";
+
+        if (/^\d+$/.test(movieId)) {
+            // Target website se search page directly hit karo
+            const searchHtml = await viewSourceFetch(`${SITE}/?s=${movieId}`);
+            if (searchHtml) {
+                const matches = searchHtml.match(/href="([^"]+)"/g);
+                if (matches) {
+                    for (let m of matches) {
+                        if (m.includes(movieId) && m.includes('.html')) {
+                            movieUrl = m.match(/href="([^"]+)"/)[1];
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!movieUrl) {
+                const mainHtml = await viewSourceFetch(`${SITE}/`);
+                if (mainHtml) {
+                    const matches = mainHtml.match(/href="([^"]+)"/g);
+                    if (matches) {
+                        for (let m of matches) {
+                            if (m.includes(movieId)) {
+                                movieUrl = m.match(/href="([^"]+)"/)[1];
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            try {
+                movieUrl = Buffer.from(decodeURIComponent(movieId), 'base64').toString('utf8');
+                new URL(movieUrl);
+            } catch (e) {
+                res.status(400).send("Invalid Target ID/URL String.");
+                return;
+            }
+        }
+
+        if (!movieUrl) {
+            res.status(404).send("Movie URL not found for ID: " + movieId);
+            return;
+        }
+
+        const singlePageSource = await viewSourceFetch(movieUrl);
+        let imdbId = "tt33764258"; 
+        let dynamicDomain = "https://gemma416okl.com"; 
+
+        if (singlePageSource) {
+            const idMatch = singlePageSource.match(/src:\s*'([^']+)'/);
+            if (idMatch) {
+                imdbId = idMatch[1];
+            }
+
+            const scriptMatch = singlePageSource.match(/src="([^"]+player\.js[^"]+)"/);
+            if (scriptMatch) {
+                let scriptUrl = scriptMatch[1];
+                if (scriptUrl.startsWith('//')) scriptUrl = "https:" + scriptUrl;
+
+                const jsSource = await viewSourceFetch(scriptUrl);
+                if (jsSource) {
+                    const domMatch = jsSource.match(/AwsIndStreamDomain\s*=\s*'([^']+)'/);
+                    if (domMatch) {
+                        dynamicDomain = domMatch[1].replace(/\/+$/, '');
+                    }
+                }
+            }
+        }
+
+        const finalRedirectUrl = `${dynamicDomain}/play/${imdbId}`;
+        res.setHeader('Location', finalRedirectUrl);
+        res.status(302).end();
+        return;
+    }
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', 'inline; filename="PRT_STREAM_MOVIES.m3u"');
+
+    let m3uOutput = "#EXTM3U\n";
+
+    const targetUrl = `${SITE}/`;
+    const html = await viewSourceFetch(targetUrl);
+
+    if (!html) {
+        m3uOutput += "#ERROR: Target resource down.\n";
+        res.status(500).send(m3uOutput);
+        return;
+    }
+
+    const articleParts = html.split('<article');
+
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers.host;
+    
+    // Yeh ensure karega ki link hamesha exact https://project-lc4mz.vercel.app/api?id=XXXXX bane
+    const baseUrl = `${protocol}://${host}/api`;
+
+    for (let i = 1; i < articleParts.length; i++) {
+        const part = articleParts[i];
+        if (!part.includes('class="post-item')) continue;
+
+        let imgUrl = "";
+        const imgMatch = part.match(/src="([^"]+)"/);
+        if (imgMatch) {
+            imgUrl = imgMatch[1];
+            if (imgUrl.startsWith('/')) imgUrl = SITE + imgUrl;
+        }
+
+        let movieUrl = "";
+        let titleText = "";
+        const titleMatch = part.match(/post-title">\s*<a[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>/s);
+        if (titleMatch) {
+            movieUrl = titleMatch[1];
+            titleText = titleMatch[2].replace(/<\/?[^>]+(>|$)/g, "").trim();
+        }
+
+        if (titleText && imgUrl && movieUrl) {
+            const idMatch = movieUrl.match(/\/(\d+)-/);
+            const shortId = idMatch ? idMatch[1] : Buffer.from(movieUrl).toString('base64').substring(0, 8);
+            
+            const finalPlayUrl = `${baseUrl}?id=${shortId}`;
+
+            m3uOutput += `#EXTINF:-1 tvg-logo="${imgUrl}" group-title="Latest Movies",${titleText}\n`;
+            m3uOutput += `${finalPlayUrl}\n`;
+        }
+    }
+
+    res.status(200).send(m3uOutput);
+}
